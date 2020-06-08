@@ -19,5 +19,5 @@ require (
 	h12.io/socks v1.0.0
 )
 
-replace github.com/emc2314/websocket => github.com/rosebe/websocket v1.14.2-utls
+replace github.com/emc2314/websocket => github.com/rosebe/websocket v1.4.2-utls
 
