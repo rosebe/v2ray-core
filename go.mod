@@ -9,7 +9,7 @@ require (
 	github.com/google/go-cmp v0.4.0
 	github.com/gorilla/websocket v1.4.1
 	github.com/miekg/dns v1.1.27
-	github.com/refraction-networking/utls v0.0.0-20190909200633-43c36d3c1f57
+	github.com/refraction-networking/utls v0.0.0-20200601200209-ada0bb9b38a0
 	go.starlark.net v0.0.0-20200203144150-6677ee5c7211
 	golang.org/x/crypto v0.0.0-20200214034016-1d94cc7ab1c6
 	golang.org/x/net v0.0.0-20190923162816-aa69164e4478
