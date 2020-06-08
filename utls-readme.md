@@ -19,7 +19,7 @@ For those who use websocket+tls together with an http2 capable server (e.g. clou
 
 # Details
 
-For tls in v2ray and ws+tls, [Chrome 72 ClientHello](https://tlsfingerprint.io/id/bbf04e5f1881f506) is used.
+For tls in v2ray and ws+tls, [Chrome 83 ClientHello(https://tlsfingerprint.io/id/9c673fd64a32c8dc) is used.
 
 However, this fingerprint has http/2 as well as http/1.1 in ALPN. If the server supports http/2, they will negotiate the protocol as http/2, which has not been supoorted by the go websocket yet.
 
