@@ -345,10 +345,3 @@ index fc9d08c1..d0c76191 100644
  	"v2ray.com/core/common"
  	"v2ray.com/core/common/net"
  	http_proto "v2ray.com/core/common/protocol/http"
-diff --git a/v2ray-core-utls-v4.27.0.patch b/v2ray-core-utls-v4.27.0.patch
-index 45eae64e..85c10fe8 100644
---- a/v2ray-core-utls-v4.27.0.patch
-+++ b/v2ray-core-utls-v4.27.0.patch
-@@ -1 +0,0 @@
--#v2ray-core-utls-v4.26.0.patch
-\ No newline at end of file
