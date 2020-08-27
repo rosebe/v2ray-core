@@ -33,7 +33,7 @@ func ListenTCP(ctx context.Context, address net.Address, port net.Port, streamSe
 		Port: int(port),
 	}, streamSettings.SocketSettings)
 	if err != nil {
-		return nil, err
+		return nil, newError("failed to listen TCP on", address, ":", port).Base(err)
 	}
 	newError("listening TCP on ", address, ":", port).WriteToLog(session.ExportIDToError(ctx))
 
@@ -47,7 +47,7 @@ func ListenTCP(ctx context.Context, address net.Address, port net.Port, streamSe
 			config:   tcpSettings,
 			addConn:  handler,
 		}
-		newError("Accepting PROXY protocol").AtWarning().WriteToLog(session.ExportIDToError(ctx))
+		newError("accepting PROXY protocol").AtWarning().WriteToLog(session.ExportIDToError(ctx))
 	} else {
 		l = &Listener{
 			listener: listener,
