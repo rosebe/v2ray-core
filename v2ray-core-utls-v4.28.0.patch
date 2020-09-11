@@ -127,7 +127,7 @@ index 96808622..c3407ccb 100644
  			session.isAEADRequest = true
  		}
  	}
-+	
++
 +	if vmessexp, vmessexp_found := os.LookupEnv("VMESSAEADEXPERIMENT"); vmessexp_found {
 +		if vmessexp == "y" {
 +			session.isAEADRequest = true
@@ -140,7 +140,7 @@ index 96808622..c3407ccb 100644
 +	if session.isAEADRequest {
 +		fmt.Println("=======VMESSAEADEXPERIMENT ENABLED========")
 +	}
-+	
++
  	copy(session.requestBodyKey[:], randomBytes[:16])
  	copy(session.requestBodyIV[:], randomBytes[16:32])
  	session.responseHeader = randomBytes[32]
