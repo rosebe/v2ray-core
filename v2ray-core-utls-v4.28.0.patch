@@ -1,13 +1,10 @@
 diff --git a/core.go b/core.go
-index 1f25e053..e0749c28 100644
+index aa6972c1..e0749c28 100644
 --- a/core.go
 +++ b/core.go
-@@ -19,10 +19,11 @@ import (
- )
- 
+@@ -21,8 +21,9 @@ import (
  var (
--	version  = "4.27.5"
-+	version  = "4.28.0"
+ 	version  = "4.28.0"
  	build    = "Custom"
 -	codename = "V2Fly, a community-driven edition of V2Ray."
 +	codename = "V2Fly_utls, a community-driven edition of V2Ray."
