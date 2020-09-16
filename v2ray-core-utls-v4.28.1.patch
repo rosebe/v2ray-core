@@ -108,25 +108,21 @@ index 32160f70..973e6a48 100644
 +rsc.io/quote/v3 v3.1.0/go.mod h1:yEA65RcK8LyAZtP9Kv3t0HmxON59tX3rD+tICJqUlj0=
 +rsc.io/sampler v1.3.0/go.mod h1:T1hPZKmBbMNahiBKFy5HrXp6adAjACjK9JXDnKaTXpA=
 diff --git a/proxy/vmess/encoding/client.go b/proxy/vmess/encoding/client.go
-index 836eda5b..8b6858ad 100644
+index cdff7c8a..a06b9ad6 100644
 --- a/proxy/vmess/encoding/client.go
 +++ b/proxy/vmess/encoding/client.go
-@@ -9,9 +9,11 @@ import (
- 	"crypto/rand"
- 	"crypto/sha256"
- 	"encoding/binary"
-+	"fmt"
- 	"hash"
- 	"hash/fnv"
- 	"io"
-+	"os"
- 	vmessaead "v2ray.com/core/proxy/vmess/aead"
- 
- 	"golang.org/x/crypto/chacha20poly1305"
-@@ -62,6 +64,19 @@ func NewClientSession(idHash protocol.IDHash, ctx context.Context) *ClientSessio
+@@ -63,11 +63,26 @@ func NewClientSession(idHash protocol.IDHash, ctx context.Context) *ClientSessio
  		}
  	}
  
++	/*
+ 	if vmessAeadDisable, vmessAeadDisableFound := os.LookupEnv("V2RAY_VMESS_AEAD_DISABLED"); vmessAeadDisableFound {
+ 		if vmessAeadDisable == "true" {
+ 			session.isAEADRequest = false
+ 		}
+ 	}
++	*/
++
 +	if vmessexp, vmessexp_found := os.LookupEnv("VMESSAEADEXPERIMENT"); vmessexp_found {
 +		if vmessexp == "y" {
 +			session.isAEADRequest = true
@@ -139,10 +135,9 @@ index 836eda5b..8b6858ad 100644
 +	if session.isAEADRequest {
 +		fmt.Println("=======VMESSAEADEXPERIMENT ENABLED========")
 +	}
-+
+ 
  	copy(session.requestBodyKey[:], randomBytes[:16])
  	copy(session.requestBodyIV[:], randomBytes[16:32])
- 	session.responseHeader = randomBytes[32]
 diff --git a/transport/internet/tcp/dialer.go b/transport/internet/tcp/dialer.go
 index e6f414e0..07a6b630 100644
 --- a/transport/internet/tcp/dialer.go
