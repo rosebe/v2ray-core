@@ -108,10 +108,18 @@ index 32160f70..973e6a48 100644
 +rsc.io/quote/v3 v3.1.0/go.mod h1:yEA65RcK8LyAZtP9Kv3t0HmxON59tX3rD+tICJqUlj0=
 +rsc.io/sampler v1.3.0/go.mod h1:T1hPZKmBbMNahiBKFy5HrXp6adAjACjK9JXDnKaTXpA=
 diff --git a/proxy/vmess/encoding/client.go b/proxy/vmess/encoding/client.go
-index cdff7c8a..a06b9ad6 100644
+index cdff7c8a..5f58a74c 100644
 --- a/proxy/vmess/encoding/client.go
 +++ b/proxy/vmess/encoding/client.go
-@@ -63,11 +63,26 @@ func NewClientSession(idHash protocol.IDHash, ctx context.Context) *ClientSessio
+@@ -9,6 +9,7 @@ import (
+ 	"crypto/rand"
+ 	"crypto/sha256"
+ 	"encoding/binary"
++	"fmt"
+ 	"hash"
+ 	"hash/fnv"
+ 	"io"
+@@ -63,11 +64,26 @@ func NewClientSession(idHash protocol.IDHash, ctx context.Context) *ClientSessio
  		}
  	}
  
