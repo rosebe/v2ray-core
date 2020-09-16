@@ -110,15 +110,24 @@ func (v *Handler) Process(ctx context.Context, link *transport.Link, dialer inte
 	}
 
 	if requestAddons.Flow == "xtls-rprx-origin" {
-		iConn := conn
-		if statConn, ok := iConn.(*internet.StatCouterConnection); ok {
-			iConn = statConn.Connection
-		}
-		if tlsConn, ok := iConn.(*tls.Conn); ok {
-			tlsConn.RPRX = true
-			//tlsConn.SHOW = true
-		} else {
-			return newError("failed to use xtls-rprx-origin").AtWarning()
+		switch request.Command {
+		case protocol.RequestCommandMux:
+			return newError("xtls-rprx-origin doesn't support Mux").AtWarning()
+		case protocol.RequestCommandUDP:
+			if request.Port == 443 {
+				return newError("xtls-rprx-origin stopped 443 UDP").AtWarning()
+			}
+		case protocol.RequestCommandTCP:
+			iConn := conn
+			if statConn, ok := iConn.(*internet.StatCouterConnection); ok {
+				iConn = statConn.Connection
+			}
+			if tlsConn, ok := iConn.(*tls.Conn); ok {
+				tlsConn.RPRX = true
+				//tlsConn.SHOW = true
+			} else {
+				return newError("failed to use xtls-rprx-origin").AtWarning()
+			}
 		}
 	}
 
