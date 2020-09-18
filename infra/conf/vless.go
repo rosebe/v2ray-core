@@ -49,10 +49,9 @@ func (c *VLessInboundConfig) Build() (proto.Message, error) {
 		}
 
 		switch account.Flow {
-		case "":
-		case "xtls-rprx-origin":
+		case "", "xtls-rprx-origin":
 		default:
-			return nil, newError(`VLESS clients: "flow" only accepts "" or "xtls-rprx-origin" in this version`)
+			return nil, newError(`VLESS clients: "flow" only accepts "", "xtls-rprx-origin" in this version`)
 		}
 
 		if account.Encryption != "" {
@@ -166,10 +165,9 @@ func (c *VLessOutboundConfig) Build() (proto.Message, error) {
 			}
 
 			switch account.Flow {
-			case "":
-			case "xtls-rprx-origin":
+			case "", "xtls-rprx-origin", "xtls-rprx-origin-udp443":
 			default:
-				return nil, newError(`VLESS users: "flow" only accepts "" or "xtls-rprx-origin" in this version`)
+				return nil, newError(`VLESS users: "flow" only accepts "", "xtls-rprx-origin", "xtls-rprx-origin-udp443" in this version`)
 			}
 
 			if account.Encryption != "none" {
