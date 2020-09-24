@@ -26,7 +26,7 @@ func TestVLessOutbound(t *testing.T) {
 					"users": [
 						{
 							"id": "27848739-7e62-4138-9fd3-098a63964b6b",
-							"flow": "xtls-rprx-origin",
+							"flow": "xtls-rprx-origin-udp443",
 							"encryption": "none",
 							"level": 0
 						}
@@ -47,7 +47,7 @@ func TestVLessOutbound(t *testing.T) {
 							{
 								Account: serial.ToTypedMessage(&vless.Account{
 									Id:         "27848739-7e62-4138-9fd3-098a63964b6b",
-									Flow:       "xtls-rprx-origin",
+									Flow:       "xtls-rprx-origin-udp443",
 									Encryption: "none",
 								}),
 								Level: 0,
