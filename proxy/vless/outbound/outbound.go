@@ -6,13 +6,13 @@ package outbound
 
 import (
 	"context"
-	"os"
 	"time"
 
 	"v2ray.com/core"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/platform"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/retry"
 	"v2ray.com/core/common/session"
@@ -23,13 +23,24 @@ import (
 	"v2ray.com/core/proxy/vless/encoding"
 	"v2ray.com/core/transport"
 	"v2ray.com/core/transport/internet"
-	"v2ray.com/core/transport/internet/tls"
+	"v2ray.com/core/transport/internet/xtls"
+)
+
+var (
+	xtls_show = false
 )
 
 func init() {
 	common.Must(common.RegisterConfig((*Config)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
 		return New(ctx, config.(*Config))
 	}))
+
+	const defaultFlagValue = "NOT_DEFINED_AT_ALL"
+
+	xtlsShow := platform.NewEnvFlag("v2ray.vless.xtls.show").GetValue(func() string { return defaultFlagValue })
+	if xtlsShow == "true" {
+		xtls_show = true
+	}
 }
 
 // Handler is an outbound connection handler for VLess protocol.
@@ -37,7 +48,6 @@ type Handler struct {
 	serverList    *protocol.ServerList
 	serverPicker  protocol.ServerPicker
 	policyManager policy.Manager
-	xtls_show     bool
 }
 
 // New creates a new VLess outbound handler.
@@ -57,10 +67,6 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 		serverList:    serverList,
 		serverPicker:  protocol.NewRoundRobinServerPicker(serverList),
 		policyManager: v.GetFeature(policy.ManagerType()).(policy.Manager),
-	}
-
-	if show, _ := os.LookupEnv("V2RAY_VLESS_XTLS_SHOW"); show == "true" {
-		handler.xtls_show = true
 	}
 
 	return handler, nil
@@ -84,6 +90,11 @@ func (h *Handler) Process(ctx context.Context, link *transport.Link, dialer inte
 		return newError("failed to find an available destination").Base(err).AtWarning()
 	}
 	defer conn.Close() // nolint: errcheck
+
+	iConn := conn
+	if statConn, ok := iConn.(*internet.StatCouterConnection); ok {
+		iConn = statConn.Connection
+	}
 
 	outbound := session.OutboundFromContext(ctx)
 	if outbound == nil || !outbound.Target.IsValid() {
@@ -116,28 +127,28 @@ func (h *Handler) Process(ctx context.Context, link *transport.Link, dialer inte
 	}
 
 	switch requestAddons.Flow {
-	case "xtls-rprx-origin", "xtls-rprx-origin-udp443":
+	case vless.XRO, vless.XRO + "-udp443":
 		switch request.Command {
 		case protocol.RequestCommandMux:
-			return newError("xtls-rprx-origin doesn't support Mux").AtWarning()
+			return newError(vless.XRO + " doesn't support Mux").AtWarning()
 		case protocol.RequestCommandUDP:
-			if requestAddons.Flow == "xtls-rprx-origin" && request.Port == 443 {
-				return newError("xtls-rprx-origin stopped UDP/443").AtWarning()
+			if requestAddons.Flow == vless.XRO && request.Port == 443 {
+				return newError(vless.XRO + " stopped UDP/443").AtWarning()
 			}
-			requestAddons.Flow = ""
+			requestAddons.Flow = vless.XRO
 		case protocol.RequestCommandTCP:
-			iConn := conn
-			if statConn, ok := iConn.(*internet.StatCouterConnection); ok {
-				iConn = statConn.Connection
-			}
-			if tlsConn, ok := iConn.(*tls.Conn); ok {
-				tlsConn.RPRX = true
-				tlsConn.SHOW = h.xtls_show
-				tlsConn.MARK = "XTLS"
+			if xtlsConn, ok := iConn.(*xtls.Conn); ok {
+				xtlsConn.RPRX = true
+				xtlsConn.SHOW = xtls_show
+				xtlsConn.MARK = "XTLS"
 			} else {
-				return newError("failed to use xtls-rprx-origin").AtWarning()
+				return newError(`failed to use ` + vless.XRO + `, maybe "security" is not "xtls"`).AtWarning()
 			}
-			requestAddons.Flow = "xtls-rprx-origin"
+			requestAddons.Flow = vless.XRO
+		}
+	default:
+		if _, ok := iConn.(*xtls.Conn); ok {
+			panic(`To avoid misunderstanding, you must fill in VLESS "flow" when using XTLS.`)
 		}
 	}
 
@@ -184,9 +195,8 @@ func (h *Handler) Process(ctx context.Context, link *transport.Link, dialer inte
 	getResponse := func() error {
 		defer timer.SetTimeout(sessionPolicy.Timeouts.UplinkOnly)
 
-		responseAddons := new(encoding.Addons)
-
-		if err := encoding.DecodeResponseHeader(conn, request, responseAddons); err != nil {
+		responseAddons, err := encoding.DecodeResponseHeader(conn, request)
+		if err != nil {
 			return newError("failed to decode response header").Base(err).AtWarning()
 		}
 
