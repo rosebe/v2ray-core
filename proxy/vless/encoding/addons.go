@@ -17,15 +17,15 @@ func EncodeHeaderAddons(buffer *buf.Buffer, addons *Addons) error {
 	switch addons.Flow {
 	case vless.XRO:
 
-		if bytes, err := proto.Marshal(addons); err != nil {
-			newError("failed to marshal addons protobuf value").Base(err)
-		} else {
-			if err := buffer.WriteByte(byte(len(bytes))); err != nil {
-				return newError("failed to write addons protobuf length").Base(err)
-			}
-			if _, err := buffer.Write(bytes); err != nil {
-				return newError("failed to write addons protobuf value").Base(err)
-			}
+		bytes, err := proto.Marshal(addons)
+		if err != nil {
+			return newError("failed to marshal addons protobuf value").Base(err)
+		}
+		if err := buffer.WriteByte(byte(len(bytes))); err != nil {
+			return newError("failed to write addons protobuf length").Base(err)
+		}
+		if _, err := buffer.Write(bytes); err != nil {
+			return newError("failed to write addons protobuf value").Base(err)
 		}
 
 	default:
@@ -192,7 +192,7 @@ func (r *LengthPacketReader) ReadMultiBuffer() (buf.MultiBuffer, error) {
 	if _, err := io.ReadFull(r.Reader, r.cache); err != nil { // maybe EOF
 		return nil, newError("failed to read packet length").Base(err)
 	}
-	length := int(r.cache[0])<<8 | int(r.cache[1])
+	length := int32(r.cache[0])<<8 | int32(r.cache[1])
 	//fmt.Println("Read", length)
 	mb := make(buf.MultiBuffer, 0, length/buf.Size+1)
 	for length > 0 {
@@ -202,7 +202,7 @@ func (r *LengthPacketReader) ReadMultiBuffer() (buf.MultiBuffer, error) {
 		}
 		length -= size
 		b := buf.New()
-		if _, err := b.ReadFullFrom(r.Reader, int32(size)); err != nil {
+		if _, err := b.ReadFullFrom(r.Reader, size); err != nil {
 			return nil, newError("failed to read packet payload").Base(err)
 		}
 		mb = append(mb, b)
