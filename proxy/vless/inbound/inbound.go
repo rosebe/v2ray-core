@@ -6,10 +6,7 @@ package inbound
 
 import (
 	"context"
-	"encoding/hex"
 	"io"
-	"os"
-	"regexp"
 	"strconv"
 	"time"
 
@@ -19,6 +16,7 @@ import (
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
 	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/platform"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/retry"
 	"v2ray.com/core/common/session"
@@ -32,6 +30,11 @@ import (
 	"v2ray.com/core/proxy/vless/encoding"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/tls"
+	"v2ray.com/core/transport/internet/xtls"
+)
+
+var (
+	xtls_show = false
 )
 
 func init() {
@@ -45,6 +48,13 @@ func init() {
 		}
 		return New(ctx, config.(*Config), dc)
 	}))
+
+	const defaultFlagValue = "NOT_DEFINED_AT_ALL"
+
+	xtlsShow := platform.NewEnvFlag("v2ray.vless.xtls.show").GetValue(func() string { return defaultFlagValue })
+	if xtlsShow == "true" {
+		xtls_show = true
+	}
 }
 
 // Handler is an inbound connection handler that handles messages in VLess protocol.
@@ -54,8 +64,7 @@ type Handler struct {
 	validator             *vless.Validator
 	dns                   dns.Client
 	fallbacks             map[string]map[string]*Fallback // or nil
-	regexps               map[string]*regexp.Regexp       // or nil
-	xtls_show             bool
+	//regexps               map[string]*regexp.Regexp       // or nil
 }
 
 // New creates a new VLess inbound handler.
@@ -110,10 +119,6 @@ func New(ctx context.Context, config *Config, dc dns.Client) (*Handler, error) {
 		}
 	}
 
-	if show, _ := os.LookupEnv("V2RAY_VLESS_XTLS_SHOW"); show == "true" {
-		handler.xtls_show = true
-	}
-
 	return handler, nil
 }
 
@@ -141,6 +146,11 @@ func (*Handler) Network() []net.Network {
 func (h *Handler) Process(ctx context.Context, network net.Network, connection internet.Connection, dispatcher routing.Dispatcher) error {
 
 	sid := session.ExportIDToError(ctx)
+
+	iConn := connection
+	if statConn, ok := iConn.(*internet.StatCouterConnection); ok {
+		iConn = statConn.Connection
+	}
 
 	sessionPolicy := h.policyManager.ForLevel(0)
 	if err := connection.SetReadDeadline(time.Now().Add(sessionPolicy.Timeouts.Handshake)); err != nil {
@@ -190,16 +200,15 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 
 			alpn := ""
 			if len(apfb) > 1 || apfb[""] == nil {
-				iConn := connection
-				if statConn, ok := iConn.(*internet.StatCouterConnection); ok {
-					iConn = statConn.Connection
-				}
 				if tlsConn, ok := iConn.(*tls.Conn); ok {
 					alpn = tlsConn.ConnectionState().NegotiatedProtocol
 					newError("realAlpn = " + alpn).AtInfo().WriteToLog(sid)
-					if apfb[alpn] == nil {
-						alpn = ""
-					}
+				} else if xtlsConn, ok := iConn.(*xtls.Conn); ok {
+					alpn = xtlsConn.ConnectionState().NegotiatedProtocol
+					newError("realAlpn = " + alpn).AtInfo().WriteToLog(sid)
+				}
+				if apfb[alpn] == nil {
+					alpn = ""
 				}
 			}
 			pfb := apfb[alpn]
@@ -314,18 +323,9 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 							pro.Write(net.ParseIP(remoteAddr).To16())
 							pro.Write(net.ParseIP(localAddr).To16())
 						}
-						p1, _ := strconv.ParseInt(remotePort, 10, 64)
-						b1, _ := hex.DecodeString(strconv.FormatInt(p1, 16))
-						p2, _ := strconv.ParseInt(localPort, 10, 64)
-						b2, _ := hex.DecodeString(strconv.FormatInt(p2, 16))
-						if len(b1) == 1 {
-							pro.WriteByte(0)
-						}
-						pro.Write(b1)
-						if len(b2) == 1 {
-							pro.WriteByte(0)
-						}
-						pro.Write(b2)
+						p1, _ := strconv.ParseUint(remotePort, 10, 16)
+						p2, _ := strconv.ParseUint(localPort, 10, 16)
+						pro.Write([]byte{byte(p1 >> 8), byte(p1), byte(p2 >> 8), byte(p2)})
 					}
 					if err := serverWriter.WriteMultiBuffer(buf.MultiBuffer{pro}); err != nil {
 						return newError("failed to set PROXY protocol v", fb.Xver).Base(err).AtWarning()
@@ -386,32 +386,28 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 	account := request.User.Account.(*vless.MemoryAccount)
 
 	responseAddons := &encoding.Addons{
-		//Flow: requestAddons.Flow,
+		Flow: requestAddons.Flow,
 	}
 
 	switch requestAddons.Flow {
-	case "xtls-rprx-origin":
-		if account.Flow == "xtls-rprx-origin" {
+	case vless.XRO:
+		if account.Flow == vless.XRO {
 			switch request.Command {
 			case protocol.RequestCommandMux:
-				return newError("xtls-rprx-origin doesn't support Mux").AtWarning()
+				return newError(vless.XRO + " doesn't support Mux").AtWarning()
 			case protocol.RequestCommandUDP:
-				return newError("xtls-rprx-origin doesn't support UDP").AtWarning()
+				//return newError(vless.XRO + " doesn't support UDP").AtWarning()
 			case protocol.RequestCommandTCP:
-				iConn := connection
-				if statConn, ok := iConn.(*internet.StatCouterConnection); ok {
-					iConn = statConn.Connection
-				}
-				if tlsConn, ok := iConn.(*tls.Conn); ok {
-					tlsConn.RPRX = true
-					tlsConn.SHOW = h.xtls_show
-					tlsConn.MARK = "XTLS"
+				if xtlsConn, ok := iConn.(*xtls.Conn); ok {
+					xtlsConn.RPRX = true
+					xtlsConn.SHOW = xtls_show
+					xtlsConn.MARK = "XTLS"
 				} else {
-					return newError("failed to use xtls-rprx-origin").AtWarning()
+					return newError(`failed to use ` + vless.XRO + `, maybe "security" is not "xtls"`).AtWarning()
 				}
 			}
 		} else {
-			return newError(account.ID.String(), " is not able to use xtls-rprx-origin").AtWarning()
+			return newError(account.ID.String() + " is not able to use " + vless.XRO).AtWarning()
 		}
 	}
 
