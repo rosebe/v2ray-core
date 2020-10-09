@@ -1,0 +1,195 @@
+diff --git a/core.go b/core.go
+index f8dcccc5..396f26b5 100644
+--- a/core.go
++++ b/core.go
+@@ -18,10 +18,13 @@ import (
+ )
+ 
+ var (
+-	version  = "4.31.0"
++	version  = "4.30.1"
+ 	build    = "Custom"
+ 	codename = "V2Fly, a community-driven edition of V2Ray."
+ 	intro    = "A unified platform for anti-censorship."
++	handshakefingerprint = "TLS handshake fingerprint : Chrome-v83-9c673fd64a32c8dc."
++	commitID = "NOT_DEFINED_AT_ALL"
++	information = "NOT_DEFINED_AT_ALL"
+ )
+ 
+ // Version returns V2Ray's version as a string, in the form of "x.y.z" where x, y and z are numbers.
+@@ -35,6 +38,9 @@ func VersionStatement() []string {
+ 	return []string{
+ 		serial.Concat("V2Ray ", Version(), " (", codename, ") ", build, " (", runtime.Version(), " ", runtime.GOOS, "/", runtime.GOARCH, ")"),
+ 		intro,
++		handshakefingerprint,
++		commitID,
++		information,
+ 	}
+ }
+ 
+diff --git a/go.mod b/go.mod
+index 0cdf645c..fa481b60 100644
+--- a/go.mod
++++ b/go.mod
+@@ -7,10 +7,11 @@ require (
+ 	github.com/golang/mock v1.4.4
+ 	github.com/golang/protobuf v1.4.2
+ 	github.com/google/go-cmp v0.5.2
+-	github.com/gorilla/websocket v1.4.2
+ 	github.com/lucas-clemente/quic-go v0.18.1
+ 	github.com/miekg/dns v1.1.31
+ 	github.com/pires/go-proxyproto v0.2.0
++	github.com/refraction-networking/utls v0.0.0-20200820030103-33a29038e742
++	github.com/rosebe/websocket v1.4.2-utls.0.20200918014819-f25dd5175fbd
+ 	github.com/seiflotfy/cuckoofilter v0.0.0-20200511222245-56093a4d3841
+ 	github.com/stretchr/testify v1.6.1
+ 	github.com/xiaokangwang/VSign v0.0.0-20200828155424-dc1c86b73fbf
+@@ -19,7 +20,7 @@ require (
+ 	golang.org/x/crypto v0.0.0-20201002170205-7f63de1d35b0
+ 	golang.org/x/net v0.0.0-20201006153459-a7d1128ccaa0
+ 	golang.org/x/sync v0.0.0-20200930132711-30421366ff76
+-	golang.org/x/sys v0.0.0-20201006155630-ac719f4daadf
++	golang.org/x/sys v0.0.0-20201007165808-a893ed343c85
+ 	google.golang.org/grpc v1.32.0
+ 	google.golang.org/protobuf v1.25.0
+ 	h12.io/socks v1.0.1
+diff --git a/go.sum b/go.sum
+index 1bf907cd..42c6e0e5 100644
+--- a/go.sum
++++ b/go.sum
+@@ -79,8 +79,6 @@ github.com/google/pprof v0.0.0-20181206194817-3ea8567a2e57/go.mod h1:zfwlbNMJ+OI
+ github.com/googleapis/gax-go v2.0.0+incompatible/go.mod h1:SFVmujtThgffbyetf+mdk2eWhX2bMyUtNHzFKcPA9HY=
+ github.com/googleapis/gax-go/v2 v2.0.3/go.mod h1:LLvjysVCY1JZeum8Z6l8qUty8fiNwE08qbEPm1M08qg=
+ github.com/gopherjs/gopherjs v0.0.0-20181017120253-0766667cb4d1/go.mod h1:wJfORRmW1u3UXTncJ5qlYoELFm8eSnnEO6hX4iZ3EWY=
+-github.com/gorilla/websocket v1.4.2 h1:+/TMaTYc4QFitKJxsQ7Yye35DkWvkdLcvGKqM+x0Ufc=
+-github.com/gorilla/websocket v1.4.2/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
+ github.com/gregjones/httpcache v0.0.0-20180305231024-9cad4c3443a7/go.mod h1:FecbI9+v66THATjSRHfNgh1IVFe/9kFxbXtjV0ctIMA=
+ github.com/grpc-ecosystem/grpc-gateway v1.5.0/go.mod h1:RSKVYQBd5MCa4OVpNdGskqpgL2+G+NZTnrVHpWWfpdw=
+ github.com/h12w/go-socks5 v0.0.0-20200522160539-76189e178364 h1:5XxdakFhqd9dnXoAZy1Mb2R/DZ6D1e+0bGC/JhucGYI=
+@@ -135,6 +133,10 @@ github.com/prometheus/client_model v0.0.0-20180712105110-5c3871d89910/go.mod h1:
+ github.com/prometheus/client_model v0.0.0-20190812154241-14fe0d1b01d4/go.mod h1:xMI15A0UPsDsEKsMN9yxemIoYk6Tm2C1GtYGdfGttqA=
+ github.com/prometheus/common v0.0.0-20180801064454-c7de2306084e/go.mod h1:daVV7qP5qjZbuso7PdcryaAu0sAZbrN9i7WWcTMWvro=
+ github.com/prometheus/procfs v0.0.0-20180725123919-05ee40e3a273/go.mod h1:c3At6R/oaqEKCNdg8wHV1ftS6bRYblBhIjjI8uT2IGk=
++github.com/refraction-networking/utls v0.0.0-20200820030103-33a29038e742 h1:m1yyAlx20ZxDzjLZK3UWd8IYmK0xo65nRzO02F9s4as=
++github.com/refraction-networking/utls v0.0.0-20200820030103-33a29038e742/go.mod h1:tz9gX959MEFfFN5whTIocCLUG57WiILqtdVxI8c6Wj0=
++github.com/rosebe/websocket v1.4.2-utls.0.20200918014819-f25dd5175fbd h1:nMjcoWH3PRtE7mP7EJ35ienMHWBuaZNQahdyjNSiyaY=
++github.com/rosebe/websocket v1.4.2-utls.0.20200918014819-f25dd5175fbd/go.mod h1:MzNMSdmKVoC8LUrsduxnFud22EjmWuVN0Hr0u+QcDZw=
+ github.com/russross/blackfriday v1.5.2/go.mod h1:JO/DiYxRf+HjHt06OyowR9PTA263kcR/rfWxYHBV53g=
+ github.com/seiflotfy/cuckoofilter v0.0.0-20200511222245-56093a4d3841 h1:pnfutQFsV7ySmHUeX6ANGfPsBo29RctUvDn8G3rmJVw=
+ github.com/seiflotfy/cuckoofilter v0.0.0-20200511222245-56093a4d3841/go.mod h1:ET5mVvNjwaGXRgZxO9UZr7X+8eAf87AfIYNwRSp9s4Y=
+@@ -240,8 +242,8 @@ golang.org/x/sys v0.0.0-20200323222414-85ca7c5b95cd/go.mod h1:h1NjWce9XRLGQEsW7w
+ golang.org/x/sys v0.0.0-20200519105757-fe76b779f299/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
+ golang.org/x/sys v0.0.0-20200625212154-ddb9806d33ae/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
+ golang.org/x/sys v0.0.0-20200930185726-fdedc70b468f/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
+-golang.org/x/sys v0.0.0-20201006155630-ac719f4daadf h1:Bg47KQy0JhTHuf4sLiQwTMKwUMfSDwgSGatrxGR7nLM=
+-golang.org/x/sys v0.0.0-20201006155630-ac719f4daadf/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
++golang.org/x/sys v0.0.0-20201007165808-a893ed343c85 h1:v7tXcN5Dmvk08x9LWujjDQbk/26sd3IqhKa1NfaKmpM=
++golang.org/x/sys v0.0.0-20201007165808-a893ed343c85/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
+ golang.org/x/text v0.0.0-20170915032832-14c0d48ead0c/go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi/IjpwHt7yyuwOQ=
+ golang.org/x/text v0.3.0/go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi/IjpwHt7yyuwOQ=
+ golang.org/x/text v0.3.1-0.20180807135948-17ff2d5776d2/go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi/IjpwHt7yyuwOQ=
+diff --git a/transport/internet/tcp/dialer.go b/transport/internet/tcp/dialer.go
+index 6c744dea..fd898d1c 100644
+--- a/transport/internet/tcp/dialer.go
++++ b/transport/internet/tcp/dialer.go
+@@ -30,7 +30,9 @@ func Dial(ctx context.Context, dest net.Destination, streamSettings *internet.Me
+ 				conn = tls.Client(conn, tlsConfig)
+ 			}
+ 		*/
+-		conn = tls.Client(conn, tlsConfig)
++	//	conn = tls.Client(conn, tlsConfig)
++		conn = tls.UClient(conn, tlsConfig)
++
+ 	} else if config := xtls.ConfigFromStreamSettings(streamSettings); config != nil {
+ 		xtlsConfig := config.GetXTLSConfig(xtls.WithDestination(dest))
+ 		conn = xtls.Client(conn, xtlsConfig)
+diff --git a/transport/internet/tls/tls.go b/transport/internet/tls/tls.go
+index a102e1f0..4c380157 100644
+--- a/transport/internet/tls/tls.go
++++ b/transport/internet/tls/tls.go
+@@ -7,6 +7,8 @@ import (
+ 
+ 	"v2ray.com/core/common/buf"
+ 	"v2ray.com/core/common/net"
++
++	utls "github.com/refraction-networking/utls"
+ )
+ 
+ //go:generate go run v2ray.com/core/common/errors/errorgen
+@@ -43,22 +45,22 @@ func Client(c net.Conn, config *tls.Config) net.Conn {
+ 	return &Conn{Conn: tlsConn}
+ }
+ 
+-/*
+-func copyConfig(c *tls.Config) *utls.Config {
++func UcopyConfig(c *tls.Config) *utls.Config {
+ 	return &utls.Config{
+ 		NextProtos:         c.NextProtos,
+ 		ServerName:         c.ServerName,
+ 		InsecureSkipVerify: c.InsecureSkipVerify,
+ 		MinVersion:         utls.VersionTLS12,
+-		MaxVersion:         utls.VersionTLS12,
++		MaxVersion:         utls.VersionTLS13,
+ 	}
+ }
+ 
+ func UClient(c net.Conn, config *tls.Config) net.Conn {
+-	uConfig := copyConfig(config)
+-	return utls.Client(c, uConfig)
++	uConfig := UcopyConfig(config)
++	tlsConn := utls.UClient(c, uConfig, utls.HelloChrome_Auto)
++	tlsConn.Handshake()
++	return tlsConn
+ }
+-*/
+ 
+ // Server initiates a TLS server handshake on the given connection.
+ func Server(c net.Conn, config *tls.Config) net.Conn {
+diff --git a/transport/internet/websocket/connection.go b/transport/internet/websocket/connection.go
+index c63d6b57..db8db204 100644
+--- a/transport/internet/websocket/connection.go
++++ b/transport/internet/websocket/connection.go
+@@ -7,7 +7,7 @@ import (
+ 	"net"
+ 	"time"
+ 
+-	"github.com/gorilla/websocket"
++	"github.com/rosebe/websocket"
+ 	"v2ray.com/core/common/buf"
+ 	"v2ray.com/core/common/errors"
+ 	"v2ray.com/core/common/serial"
+diff --git a/transport/internet/websocket/dialer.go b/transport/internet/websocket/dialer.go
+index 7545f853..9aaafeac 100644
+--- a/transport/internet/websocket/dialer.go
++++ b/transport/internet/websocket/dialer.go
+@@ -6,7 +6,7 @@ import (
+ 	"context"
+ 	"time"
+ 
+-	"github.com/gorilla/websocket"
++	"github.com/rosebe/websocket"
+ 	"v2ray.com/core/common"
+ 	"v2ray.com/core/common/net"
+ 	"v2ray.com/core/common/session"
+@@ -45,7 +45,7 @@ func dialWebsocket(ctx context.Context, dest net.Destination, streamSettings *in
+ 
+ 	if config := tls.ConfigFromStreamSettings(streamSettings); config != nil {
+ 		protocol = "wss"
+-		dialer.TLSClientConfig = config.GetTLSConfig(tls.WithDestination(dest), tls.WithNextProto("http/1.1"))
++		dialer.TLSClientConfig = tls.UcopyConfig(config.GetTLSConfig(tls.WithDestination(dest)))
+ 	}
+ 
+ 	host := dest.NetAddr()
+diff --git a/transport/internet/websocket/hub.go b/transport/internet/websocket/hub.go
+index e7e90d35..b8c0d651 100644
+--- a/transport/internet/websocket/hub.go
++++ b/transport/internet/websocket/hub.go
+@@ -9,7 +9,7 @@ import (
+ 	"sync"
+ 	"time"
+ 
+-	"github.com/gorilla/websocket"
++	"github.com/rosebe/websocket"
+ 	"github.com/pires/go-proxyproto"
+ 
+ 	"v2ray.com/core/common"
